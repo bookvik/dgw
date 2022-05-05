@@ -281,9 +281,6 @@ func PgColToField(col *PgColumn, typeCfg *PgTypeMapConfig) (*StructField, error)
 
 	for k, v := range cfg {
 		if contains(col.DataType, v.DBTypes) {
-			fmt.Println("k", k)
-			fmt.Println("v", v)
-			fmt.Println("v", v.Tag)
 			tag = v.Tag
 			break
 		}
