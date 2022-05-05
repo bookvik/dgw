@@ -1,4 +1,4 @@
-module github.com/achiku/dgw
+module github.com/bookvik/dgw
 
 go 1.15
 
