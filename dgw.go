@@ -275,6 +275,8 @@ func PgConvertType(col *PgColumn, typeCfg *PgTypeMapConfig) string {
 func PgColToField(col *PgColumn, typeCfg *PgTypeMapConfig) (*StructField, error) {
 	typ := map[string]TypeMap(*typeCfg)["default"]
 
+	fmt.Println(typ.Tag)
+
 	stfType := PgConvertType(col, typeCfg)
 	stf := &StructField{
 		Name:   varfmt.PublicVarName(col.Name),
