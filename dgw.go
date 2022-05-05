@@ -167,7 +167,8 @@ type Struct struct {
 
 // StructTmpl go struct passed to template
 type StructTmpl struct {
-	Struct *Struct
+	Struct     *Struct
+	UniqFields []*StructField
 }
 
 // StructField go struct field
@@ -273,16 +274,28 @@ func PgConvertType(col *PgColumn, typeCfg *PgTypeMapConfig) string {
 
 // PgColToField converts pg column to go struct field
 func PgColToField(col *PgColumn, typeCfg *PgTypeMapConfig) (*StructField, error) {
-	typ := map[string]TypeMap(*typeCfg)["default"]
-
-	fmt.Println(typ.Tag)
-
+	cfg := map[string]TypeMap(*typeCfg)
 	stfType := PgConvertType(col, typeCfg)
+
+	var tag string
+
+	for k, v := range cfg {
+		if contains(col.DataType, v.DBTypes) {
+			fmt.Println("k", k)
+			fmt.Println("v", v)
+			fmt.Println("v", v.Tag)
+			tag = v.Tag
+			break
+		}
+	}
+
+	fmt.Println("tag", tag)
+
 	stf := &StructField{
 		Name:   varfmt.PublicVarName(col.Name),
 		Type:   stfType,
 		Column: col,
-		Tag:    typ.Tag,
+		Tag:    tag,
 	}
 	return stf, nil
 }
@@ -367,6 +380,27 @@ func PgCreateStruct(
 			return src, errors.Wrap(err, fmt.Sprintf("failed to decode type map file %s", typeMapPath))
 		}
 	}
+
+	uniqField := map[string]*StructField{}
+
+	for _, tbl := range tbls {
+		if contains(tbl.Name, exTbls) {
+			continue
+		}
+
+		st, _ := PgTableToStruct(tbl, cfg, autoGenKeyCfg)
+
+		for _, v := range st.Fields {
+			uniqField[v.Name] = v
+		}
+	}
+
+	uniqFieldsList := []*StructField{}
+
+	for _, v := range uniqField {
+		uniqFieldsList = append(uniqFieldsList, v)
+	}
+
 	for _, tbl := range tbls {
 		if contains(tbl.Name, exTbls) {
 			continue
@@ -380,7 +414,7 @@ func PgCreateStruct(
 			if err != nil {
 				return nil, err
 			}
-			s, err := PgExecuteCustomTmpl(&StructTmpl{Struct: st}, string(tmpl))
+			s, err := PgExecuteCustomTmpl(&StructTmpl{Struct: st, UniqFields: []*StructField{}}, string(tmpl))
 			if err != nil {
 				return nil, errors.Wrap(err, "PgExecuteCustomTmpl failed")
 			}
@@ -398,5 +432,18 @@ func PgCreateStruct(
 			src = append(src, m...)
 		}
 	}
+
+	if customTmpl != "" {
+		tmpl, err := ioutil.ReadFile(customTmpl)
+		if err != nil {
+			return nil, err
+		}
+		s, err := PgExecuteCustomTmpl(&StructTmpl{Struct: &Struct{Name: ""}, UniqFields: uniqFieldsList}, string(tmpl))
+		if err != nil {
+			return nil, errors.Wrap(err, "PgExecuteCustomTmpl failed")
+		}
+		src = append(src, s...)
+	}
+
 	return src, nil
 }
