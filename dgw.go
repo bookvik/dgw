@@ -106,6 +106,7 @@ type TypeMap struct {
 	DBTypes        []string `toml:"db_types"`
 	NotNullGoType  string   `toml:"notnull_go_type"`
 	NullableGoType string   `toml:"nullable_go_type"`
+	Tag            string   `toml:"tag"`
 }
 
 // AutoKeyMap auto generating key config
@@ -272,11 +273,14 @@ func PgConvertType(col *PgColumn, typeCfg *PgTypeMapConfig) string {
 
 // PgColToField converts pg column to go struct field
 func PgColToField(col *PgColumn, typeCfg *PgTypeMapConfig) (*StructField, error) {
+	typ := map[string]TypeMap(*typeCfg)["default"]
+
 	stfType := PgConvertType(col, typeCfg)
 	stf := &StructField{
 		Name:   varfmt.PublicVarName(col.Name),
 		Type:   stfType,
 		Column: col,
+		Tag:    typ.Tag,
 	}
 	return stf, nil
 }
