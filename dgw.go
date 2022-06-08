@@ -388,7 +388,13 @@ func PgCreateStruct(
 		st, _ := PgTableToStruct(tbl, cfg, autoGenKeyCfg)
 
 		for _, v := range st.Fields {
-			uniqField[v.Name] = v
+			if _, ok := uniqField[v.Name]; !ok {
+				uniqField[v.Name] = v	
+			} else {
+				if _, ok := uniqField[v.Name + v.Type]; !ok {
+					uniqField[v.Name + v.Type] = v	
+				}
+			} 
 		}
 	}
 
