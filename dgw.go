@@ -392,7 +392,8 @@ func PgCreateStruct(
 				uniqField[v.Name] = v	
 			} else {
 				if _, ok := uniqField[v.Name + v.Type]; !ok {
-					uniqField[v.Name + v.Type] = v	
+					v.Name = v.Name + v.Type
+					uniqField[v.Name] = v
 				}
 			} 
 		}
